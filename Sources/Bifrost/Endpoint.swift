@@ -24,7 +24,7 @@ public struct Endpoint {
     ///   - headers: Headers to be used with Request
     ///   - params: URL query params
     ///   - data: Any data to append with request, works only with body compatible methods
-    init(method: Method = .get, urlString: String, path: String? = nil, headers: [Header] = [], params: [URLQueryItem] = [], data: Data? = nil) {
+    public init(method: Method = .get, urlString: String, path: String? = nil, headers: [Header] = [], params: [URLQueryItem] = [], data: Data? = nil) {
         self.method = method
         self.urlString = urlString
         self.path = path
