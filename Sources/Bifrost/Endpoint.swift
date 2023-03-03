@@ -11,14 +11,26 @@ public struct Endpoint {
     let method: Method
     let urlString : String
     let path : String?
-    var headers : [Header]?
+    var headers : [Header]
+    var params: [URLQueryItem]
     private var data: Data?
     
-    public init(method: Method = .get, urlString: String, path: String? = nil, headers: [Header]? = []) {
+    
+    /// Initialises the endpoint with given options
+    /// - Parameters:
+    ///   - method: `HTTPMethod` to use
+    ///   - urlString: Resource url to perform request with
+    ///   - path: Resource path of the base URL
+    ///   - headers: Headers to be used with Request
+    ///   - params: URL query params
+    ///   - data: Any data to append with request, works only with body compatible methods
+    init(method: Method = .get, urlString: String, path: String? = nil, headers: [Header] = [], params: [URLQueryItem] = [], data: Data? = nil) {
         self.method = method
         self.urlString = urlString
         self.path = path
         self.headers = headers
+        self.params = params
+        self.data = data
     }
     
     public var url : URL {
@@ -32,7 +44,19 @@ public struct Endpoint {
                 }
                 url = URL(string: nsPath, relativeTo: url)!
             }
-            return url
+            if #available(iOS 16.0, *) {
+                url.append(queryItems: params)
+                return url
+            } else {
+                guard var components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
+                    throw URLError(.unsupportedURL)
+                }
+                components.queryItems = params
+                if components.url == nil {
+                    throw URLError(.badURL)
+                }
+                return components.url!
+            }
         }
     }
     
@@ -40,31 +64,69 @@ public struct Endpoint {
         get throws{
             var req = try URLRequest(url: url)
             req.httpMethod = method.rawValue
-            headers?.forEach { header in
+            headers.forEach { header in
                 req.setValue(header.value, forHTTPHeaderField: header.key.rawValue)
             }
-            if let _ = data {
+            if let _ = data, [Method.put, .post, .patch].contains(method) {
                 req.httpBody = data
             }
             return req
         }
     }
     
+    
+    
+    /// set data to `URLRequest`
+    /// - Parameter data: `Data`.
+    /// - Returns: a discardable result of caller, helpful to chain.
     @discardableResult
     public mutating func set(_ data: Data) -> Endpoint {
         self.data = data
         return self
     }
     
+    /// set dictionary to `URLRequest`
+    /// - Parameter dict: Dictionary with Encodable key and value. throws an error when the data is not convertible to `JSON`
+    /// - Returns: a discardable result of caller, helpful to chain.
     @discardableResult
     public mutating func set(_ dict: [String: Encodable]) throws -> Endpoint {
         self.data = try dict.json
         return self
     }
     
+    /// set header to `URLRequest`
+    /// - Parameter header: `Header` struct which contains `Key` as `HTTPHeader` and `Value`.
+    /// - Returns: a discardable result of caller, helpful to chain.
     @discardableResult
     public mutating func set(_ header: Header) -> Endpoint {
-        self.headers?.append(header)
+        self.headers.append(header)
+        return self
+    }
+    
+    /// drop header to `URLRequest`
+    /// - Parameter type: `HeaderType` enum
+    /// - Returns: a discardable result of caller, helpful to chain.
+    @discardableResult
+    public mutating func drop(_ type: Header.HeaderType) -> Endpoint {
+        self.headers.removeAll { $0.key == type}
+        return self
+    }
+    
+    /// set queryItem to `URLRequest`
+    /// - Parameter param: `URLQueryItem` struct.
+    /// - Returns: a discardable result of caller, helpful to chain.
+    @discardableResult
+    public mutating func set(_ param: URLQueryItem) -> Endpoint {
+        self.params.append(param)
+        return self
+    }
+    
+    /// drop queryItem to `URLRequest`
+    /// - Parameter name: `String`, name of the URLQueryItem.
+    /// - Returns: a discardable result of caller, helpful to chain.
+    @discardableResult
+    public mutating func drop(_ name: String) -> Endpoint {
+        self.params.removeAll { $0.name == name }
         return self
     }
 }
