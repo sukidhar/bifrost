@@ -108,7 +108,7 @@ public struct Endpoint {
     /// - Returns: a discardable result of caller, helpful to chain.
     @discardableResult
     public mutating func drop(_ type: Header.HeaderType) -> Endpoint {
-        self.headers.removeAll { $0.key == type}
+        self.headers.removeAll { $0.key.rawValue == type.rawValue}
         return self
     }
     
