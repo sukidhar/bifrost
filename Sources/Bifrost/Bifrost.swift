@@ -87,3 +87,22 @@ extension Bifrost{
         case unknownError(Error)
     }
 }
+
+extension Bifrost.BiFrostError : LocalizedError {
+    public var errorDescription: String? {
+        switch self{
+        case .invalidURLRequest:
+            return NSLocalizedString("Failed to parse the given URL or URL Path", comment: "")
+        case .badResponse:
+            return NSLocalizedString("Failed to process the request and provide response", comment: "")
+        case .badResponseCode(let code):
+            return NSLocalizedString("Failed to process response, received status code: \(code)", comment: "")
+        case .failedToDecode:
+            return NSLocalizedString("Failed to decode the JSON response into the provided Codable", comment: "")
+        case .noData:
+            return NSLocalizedString("Request successful, received 0 bytes of data in response", comment: "")
+        case .unknownError(let error):
+            return NSLocalizedString("\(error.localizedDescription)", comment: "Unknown Error")
+        }
+    }
+}
