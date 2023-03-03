@@ -23,13 +23,9 @@
 ## 📝 Table of Contents
 - [About](#about)
 - [Getting Started](#getting_started)
-- [Deployment](#deployment)
 - [Usage](#usage)
-- [Built Using](#built_using)
-- [TODO](../TODO.md)
-- [Contributing](../CONTRIBUTING.md)
 - [Authors](#authors)
-- [Acknowledgments](#acknowledgement)
+- [Contributing](#contributing)
 
 ## 🧐 About <a name = "about"></a>
 After building several experimental apps, I came to realise that I am rewriting most of the generic networking over and over across projects. Well. why not use something already popular? For instance Alamofire. Most projects do not really need the huge dependency like Alamofire and can suffice with URLSession. Using `URLSession` and `URLRequest` directly requires you to handle errors manually, depending on how one handles it. To streamline error handling and encapsulate common headers and request mechanism, Bifrost is born. It is light-weight, extensible and supports concurrency.
@@ -54,23 +50,55 @@ Bifrost abstracts away `URL`, `URLRequest` with `Endpoint`. To create an endpoin
 ```swift
 // by default, each endpoint assumes it's `HTTP` method is `GET`. 
 // It expects `urlString` which can be full length resource URL or base URL.
-
 let endpoint = Endpoint(urlString: "https://example.com/user")
 
 // In case, you want to reuse the base url string and deal the endpoints with `path`.
-
 let endpoint = Endpoint(urlString: "https://example.com", path: "request-route")
 
 // In case, you want to change the `HTTP` method to `POST`, provide explicit init attribute.
-
 let endpoint = Endpoint(method: .post, urlString: "https://example.com", path: "request-route")
 
 // Would like to add headers?. Most common headers are included and are available as `Enum`.
-
 let endpoint = Endpoint(method: .post, urlString: "https://example.com", path: "request-route", headers: [[.init(.accept, value: "application/json, text/plain, */*")])
+
+// Already have an endpoint?
+// To set header
+endpoint.set(.init(.host, value: "ios"))
+
+// have custom header
+endpoint.set(.init(.custom("Host"), value: "ios"))
+
+// you can chain multiple operations
+endpoint
+  .set(.init(.host, value: "ios"))
+  .drop(.custom("Host"))
+  
+// you can set query items and drop query items in similar way
 ```
 
 Bifrost provides a shared instance to not have instances dangling across the app. 
+
+```swift
+struct Response: Decodable {
+  let result: String
+  // ... more properties
+}
+
+var response: Response? = nil
+
+// will parse ur response to given Decodoable model
+response = try await Bifrost.shared.connect(endpoint: endpoint)
+
+// with Combine
+@Published var response: Response? = nil
+
+Bifrost.shared.connect(endpoint)
+  .catch({ error in
+      print(error.localizedDescription)
+      Just(nil)
+  })
+  .assign(to: &$response)
+```
 
 
 ## ✍️ Authors <a name = "authors"></a>
@@ -86,7 +114,3 @@ Feel to free open a Pull Request, Issue or Feature requests. For further help or
 
 Bifrost is available under the MIT license. [See LICENSE](https://github.com/sukidhar/bifrost/blob/master/LICENSE) for details.
 
-## 🎉 Acknowledgements <a name = "acknowledgement"></a>
-- Hat tip to anyone whose code was used
-- Inspiration
-- References
