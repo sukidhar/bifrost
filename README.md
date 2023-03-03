@@ -86,7 +86,7 @@ struct Response: Decodable {
 
 var response: Response? = nil
 
-// will parse ur response to given Decodoable model
+// will parse your response to given Decodoable model
 response = try await Bifrost.shared.connect(endpoint: endpoint)
 
 // with Combine
